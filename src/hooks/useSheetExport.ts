@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { exportColumns, rowsToMatrix } from "@/utils/exportCsv";
 import type { BusinessRow } from "@/utils/parseResults";
 import { useApp } from "@/context/AppContext";
+import { sendSheetWebhook } from "@/lib/sheetProxy";
 
 const URL_KEY = "msp_sheets_url";
 const NAME_KEY = "msp_sheets_name";
@@ -37,20 +38,13 @@ export function useSheetExport() {
     }
     setSending(true);
     try {
-      // Call webhook directly from browser (static deployment)
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      await sendSheetWebhook(url, {
           sheetName,
           headers: exportColumns,
           rows: rowsToMatrix(rows),
           meta: { query: lastSearch?.query ?? "", location: lastSearch?.location ?? "" },
           timestamp: new Date().toISOString(),
-        }),
       });
-      const data = await response.text().catch(() => "");
-      if (!response.ok) throw new Error(`Webhook returned ${response.status}: ${data.slice(0, 200)}`);
       toast.success(`Pushed ${rows.length} rows to Google Sheet`);
       return true;
     } catch (error) {

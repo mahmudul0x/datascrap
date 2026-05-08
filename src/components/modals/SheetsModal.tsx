@@ -26,7 +26,7 @@ export function SheetsModal({ open, initialUrl, initialSheetName, onClose, onSav
           <div className="grid h-10 w-10 place-items-center rounded-lg bg-success/15 text-success"><FileSpreadsheet className="h-5 w-5" /></div>
           <div>
             <h2 className="font-display text-2xl tracking-tight">Connect Google Sheet</h2>
-            <p className="text-xs text-muted-foreground">Push scraped data straight into your spreadsheet via Apps Script.</p>
+            <p className="text-xs text-muted-foreground">Push scraped data straight into your spreadsheet via Apps Script through your Netlify proxy.</p>
           </div>
         </div>
 

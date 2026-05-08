@@ -58,6 +58,70 @@ function buildUpstreamUrl(mode, params, apiKey) {
 }
 
 export async function handler(event) {
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 204,
+      headers: {
+        Allow: "GET, POST, OPTIONS",
+      },
+      body: "",
+    };
+  }
+
+  if (event.httpMethod === "POST") {
+    const pathname = event.path || "";
+
+    if (!pathname.endsWith("/sheet-proxy")) {
+      return json(405, { error: "Method not allowed" });
+    }
+
+    let payload;
+
+    try {
+      payload = event.body ? JSON.parse(event.body) : {};
+    } catch {
+      return json(400, { error: "Invalid JSON body." });
+    }
+
+    const targetUrl = typeof payload?.url === "string" ? payload.url.trim() : "";
+    const body = payload?.body;
+
+    if (!targetUrl) {
+      return json(400, { error: "Missing Google Apps Script URL." });
+    }
+
+    if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:\?.*)?$/i.test(targetUrl)) {
+      return json(400, { error: "Invalid Google Apps Script URL." });
+    }
+
+    try {
+      const response = await fetch(targetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body ?? {}),
+      });
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        return json(response.status || 502, {
+          error: `Google Sheet webhook returned ${response.status}${text ? `: ${text.slice(0, 200)}` : ""}`,
+        });
+      }
+
+      let parsed;
+      try {
+        parsed = text ? JSON.parse(text) : { ok: true };
+      } catch {
+        parsed = { ok: true, raw: text };
+      }
+
+      return json(200, parsed);
+    } catch {
+      return json(502, { error: "Unable to reach Google Sheet webhook." });
+    }
+  }
+
   if (event.httpMethod !== "GET") {
     return json(405, { error: "Method not allowed" });
   }
