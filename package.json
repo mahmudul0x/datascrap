@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && node scripts/generate-index.mjs",
-    "build:dev": "vite build --mode development && node scripts/generate-index.mjs",
-    "preview": "vite preview",
+    "clean": "node scripts/clean-dist.mjs",
+    "build": "npm run clean && vite build",
+    "build:dev": "npm run clean && vite build --mode development",
+    "preview": "node scripts/preview-dist.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
