@@ -10,15 +10,36 @@ export function useReviews() {
     setResults((current) => current.map((row) => row.id === rowId ? { ...row, reviewStatus: "loading" } : row));
 
     try {
-      const response = await fetch("/api/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, dataId, placeId, language: lastSearch?.language ?? "en" }),
+      // Direct SerpAPI call from browser
+      const params = new URLSearchParams({
+        engine: "google_maps_reviews",
+        hl: lastSearch?.language ?? "en",
+        sort_by: "ratingHigh",
+        api_key: apiKey,
       });
-      const data = await response.json();
-      if (!response.ok || data.error) throw new Error(data.error ?? "Failed to fetch review");
+      if (dataId) params.set("data_id", dataId);
+      else if (placeId) params.set("place_id", placeId);
 
-      const topReview: TopReview | null = data.topReview ?? null;
+      const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json().catch(() => ({ error: "SerpAPI returned an unreadable response." }));
+      
+      if (!response.ok || payload.error) {
+        throw new Error(payload.error ?? "Failed to fetch review");
+      }
+
+      const reviews = Array.isArray(payload.reviews) ? payload.reviews : [];
+      const top = reviews.find((r: any) => r.snippet && r.snippet.trim().length > 0) ?? null;
+
+      const topReview: TopReview | null = top ? {
+        snippet: (top.snippet ?? "").slice(0, 320),
+        author: top.user?.name ?? "Anonymous",
+        rating: typeof top.rating === "number" ? top.rating : null,
+        link: top.link ?? top.user?.link ?? "",
+      } : null;
+
       setResults((current) => current.map((row) => row.id === rowId ? { ...row, topReview, reviewStatus: topReview ? "loaded" : "none" } : row));
     } catch {
       setResults((current) => current.map((row) => row.id === rowId ? { ...row, reviewStatus: "error" } : row));

@@ -27,15 +27,21 @@ const popularLocations = [
   "Dhaka, Bangladesh", "Singapore", "Berlin, Germany", "Paris, France", "Toronto, Canada", "Sydney, Australia",
 ];
 
-async function fetchLocationSuggestions(query: string): Promise<string[]> {
+async function fetchLocationSuggestions(query: string, apiKey?: string): Promise<string[]> {
+  if (!query.trim()) return [];
   try {
-    const res = await fetch("/api/locations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query }),
+    // Direct SerpAPI call from browser
+    const params = new URLSearchParams({ q: query, limit: "10" });
+    const res = await fetch(`https://serpapi.com/locations.json?${params.toString()}`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
     });
-    const data = await res.json();
-    return Array.isArray(data.suggestions) ? data.suggestions : [];
+    const data = await res.json().catch(() => []);
+    const list = Array.isArray(data) ? data : [];
+    return list
+      .map((item: any) => item.canonical_name || item.name)
+      .filter((value): value is string => Boolean(value && value.length))
+      .slice(0, 10);
   } catch {
     return [];
   }

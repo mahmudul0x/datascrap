@@ -37,19 +37,20 @@ export function useSheetExport() {
     }
     setSending(true);
     try {
-      const response = await fetch("/api/sheets", {
+      // Call webhook directly from browser (static deployment)
+      const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          webhookUrl: url,
           sheetName,
           headers: exportColumns,
           rows: rowsToMatrix(rows),
           meta: { query: lastSearch?.query ?? "", location: lastSearch?.location ?? "" },
+          timestamp: new Date().toISOString(),
         }),
       });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.error) throw new Error(data.error ?? "Failed to push to sheet");
+      const data = await response.text().catch(() => "");
+      if (!response.ok) throw new Error(`Webhook returned ${response.status}: ${data.slice(0, 200)}`);
       toast.success(`Pushed ${rows.length} rows to Google Sheet`);
       return true;
     } catch (error) {

@@ -10,84 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiSheetsRouteImport } from './routes/api.sheets'
-import { Route as ApiSerpapiRouteImport } from './routes/api.serpapi'
-import { Route as ApiReviewRouteImport } from './routes/api.review'
-import { Route as ApiLocationsRouteImport } from './routes/api.locations'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiSheetsRoute = ApiSheetsRouteImport.update({
-  id: '/api/sheets',
-  path: '/api/sheets',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiSerpapiRoute = ApiSerpapiRouteImport.update({
-  id: '/api/serpapi',
-  path: '/api/serpapi',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiReviewRoute = ApiReviewRouteImport.update({
-  id: '/api/review',
-  path: '/api/review',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiLocationsRoute = ApiLocationsRouteImport.update({
-  id: '/api/locations',
-  path: '/api/locations',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/api/locations': typeof ApiLocationsRoute
-  '/api/review': typeof ApiReviewRoute
-  '/api/serpapi': typeof ApiSerpapiRoute
-  '/api/sheets': typeof ApiSheetsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/api/locations': typeof ApiLocationsRoute
-  '/api/review': typeof ApiReviewRoute
-  '/api/serpapi': typeof ApiSerpapiRoute
-  '/api/sheets': typeof ApiSheetsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/api/locations': typeof ApiLocationsRoute
-  '/api/review': typeof ApiReviewRoute
-  '/api/serpapi': typeof ApiSerpapiRoute
-  '/api/sheets': typeof ApiSheetsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/api/locations'
-    | '/api/review'
-    | '/api/serpapi'
-    | '/api/sheets'
+  fullPaths: '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/locations' | '/api/review' | '/api/serpapi' | '/api/sheets'
-  id:
-    | '__root__'
-    | '/'
-    | '/api/locations'
-    | '/api/review'
-    | '/api/serpapi'
-    | '/api/sheets'
+  to: '/'
+  id: '__root__' | '/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ApiLocationsRoute: typeof ApiLocationsRoute
-  ApiReviewRoute: typeof ApiReviewRoute
-  ApiSerpapiRoute: typeof ApiSerpapiRoute
-  ApiSheetsRoute: typeof ApiSheetsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,43 +48,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/sheets': {
-      id: '/api/sheets'
-      path: '/api/sheets'
-      fullPath: '/api/sheets'
-      preLoaderRoute: typeof ApiSheetsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/serpapi': {
-      id: '/api/serpapi'
-      path: '/api/serpapi'
-      fullPath: '/api/serpapi'
-      preLoaderRoute: typeof ApiSerpapiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/review': {
-      id: '/api/review'
-      path: '/api/review'
-      fullPath: '/api/review'
-      preLoaderRoute: typeof ApiReviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/locations': {
-      id: '/api/locations'
-      path: '/api/locations'
-      fullPath: '/api/locations'
-      preLoaderRoute: typeof ApiLocationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ApiLocationsRoute: ApiLocationsRoute,
-  ApiReviewRoute: ApiReviewRoute,
-  ApiSerpapiRoute: ApiSerpapiRoute,
-  ApiSheetsRoute: ApiSheetsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
