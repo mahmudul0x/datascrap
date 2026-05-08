@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { fetchSerpApiConfig } from "@/lib/serpApiProxy";
 import { demoRows, type BusinessRow } from "@/utils/parseResults";
 
 type ScrapeStatus = "idle" | "scraping";
@@ -43,6 +44,7 @@ type AppContextValue = {
   setLightMode: (light: boolean) => void;
   scrapeMeta: ScrapeMeta;
   setScrapeMeta: React.Dispatch<React.SetStateAction<ScrapeMeta>>;
+  hasServerApiKey: boolean;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -61,11 +63,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [lastSearch, setLastSearch] = useState<LastSearch>(null);
   const [lightMode, setLightMode] = useState(false);
   const [scrapeMeta, setScrapeMeta] = useState<ScrapeMeta>({ page: 0, totalPages: 0, collected: 0, target: 0, startedAt: null, phase: "idle" });
+  const [hasServerApiKey, setHasServerApiKey] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("msp_serpapi_key") ?? "";
     setApiKey(stored);
-    if (!stored) setModalOpen(true);
+
+    let cancelled = false;
+
+    fetchSerpApiConfig()
+      .then(({ hasServerApiKey }) => {
+        if (cancelled) return;
+        setHasServerApiKey(hasServerApiKey);
+        if (!stored && !hasServerApiKey) setModalOpen(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        if (!stored) setModalOpen(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -85,8 +104,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({ apiKey, setApiKeyValue, clearApiKey, results, setResults, isDemo, setIsDemo, status, setStatus, progress, setProgress, error, setError, selectedIds, setSelectedIds, nextStart, setNextStart, modalOpen, setModalOpen, sidebarOpen, setSidebarOpen, lastSearch, setLastSearch, lightMode, setLightMode, scrapeMeta, setScrapeMeta }),
-    [apiKey, results, isDemo, status, progress, error, selectedIds, nextStart, modalOpen, sidebarOpen, lastSearch, lightMode, scrapeMeta],
+    () => ({ apiKey, setApiKeyValue, clearApiKey, results, setResults, isDemo, setIsDemo, status, setStatus, progress, setProgress, error, setError, selectedIds, setSelectedIds, nextStart, setNextStart, modalOpen, setModalOpen, sidebarOpen, setSidebarOpen, lastSearch, setLastSearch, lightMode, setLightMode, scrapeMeta, setScrapeMeta, hasServerApiKey }),
+    [apiKey, results, isDemo, status, progress, error, selectedIds, nextStart, modalOpen, sidebarOpen, lastSearch, lightMode, scrapeMeta, hasServerApiKey],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

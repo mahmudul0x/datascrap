@@ -1,4 +1,5 @@
 import { useApp } from "@/context/AppContext";
+import { callSerpApi } from "@/lib/serpApiProxy";
 import type { TopReview } from "@/utils/parseResults";
 
 export function useReviews() {
@@ -10,25 +11,14 @@ export function useReviews() {
     setResults((current) => current.map((row) => row.id === rowId ? { ...row, reviewStatus: "loading" } : row));
 
     try {
-      // Direct SerpAPI call from browser
       const params = new URLSearchParams({
-        engine: "google_maps_reviews",
+        mode: "reviews",
         hl: lastSearch?.language ?? "en",
-        sort_by: "ratingHigh",
-        api_key: apiKey,
       });
       if (dataId) params.set("data_id", dataId);
       else if (placeId) params.set("place_id", placeId);
 
-      const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-      const payload = await response.json().catch(() => ({ error: "SerpAPI returned an unreadable response." }));
-      
-      if (!response.ok || payload.error) {
-        throw new Error(payload.error ?? "Failed to fetch review");
-      }
+      const payload = await callSerpApi(params);
 
       const reviews = Array.isArray(payload.reviews) ? payload.reviews : [];
       const top = reviews.find((r: any) => r.snippet && r.snippet.trim().length > 0) ?? null;

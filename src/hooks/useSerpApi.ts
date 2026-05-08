@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { useApp } from "@/context/AppContext";
 import { checkWebsiteStatus } from "@/hooks/useWebsiteStatus";
+import { callSerpApi } from "@/lib/serpApiProxy";
 import { parseSerpResults, type BusinessRow } from "@/utils/parseResults";
 
 type SearchParams = {
@@ -19,29 +20,25 @@ function friendlyError(message: string) {
   return message || "Network error. Check your connection and try again.";
 }
 
-async function fetchSerpPage(input: { query: string; location: string; language: string; apiKey: string; start: number | null }) {
-  // Direct SerpAPI call from browser (no backend needed for static deployment)
+async function fetchSerpPage(input: { query: string; location: string; language: string; start: number | null }) {
   const params = new URLSearchParams({
-    engine: "google_maps",
+    mode: "search",
     q: `${input.query} in ${input.location}`,
-    type: "search",
     hl: input.language,
-    api_key: input.apiKey,
   });
 
   if (input.start) params.set("start", String(input.start));
 
-  const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-  const data = await response.json().catch(() => ({ error: "SerpAPI returned an unreadable response." }));
-  if (!response.ok || data.error) throw new Error(friendlyError(data.error ?? "Network error. Check your connection and try again."));
-  return data;
+  try {
+    return await callSerpApi(params);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Network error. Check your connection and try again.";
+    throw new Error(friendlyError(message));
+  }
 }
 
 export function useSerpApi() {
-  const { apiKey, results, setResults, setIsDemo, setStatus, setProgress, setError, setNextStart, setSelectedIds, setScrapeMeta } = useApp();
+  const { apiKey, hasServerApiKey, results, setResults, setIsDemo, setStatus, setProgress, setError, setNextStart, setSelectedIds, setScrapeMeta } = useApp();
 
   const runStatusChecks = (ids: string[]) => {
     ids.forEach(async (id) => {
@@ -52,7 +49,7 @@ export function useSerpApi() {
   };
 
   const scrape = async ({ query, location, maxResults, language, start = null }: SearchParams) => {
-    if (!apiKey) return;
+    if (!apiKey && !hasServerApiKey) return;
     const safeQuery = query.trim().slice(0, 160);
     const safeLocation = location.trim().slice(0, 160);
     const safeMax = Math.min(Math.max(maxResults, 1), 200);
@@ -71,7 +68,7 @@ export function useSerpApi() {
       let pages = 0;
 
       while (collected.length < safeMax && nextStart !== null && pages < 10) {
-        const data = await fetchSerpPage({ query: safeQuery, location: safeLocation, language, apiKey, start: nextStart || null });
+        const data = await fetchSerpPage({ query: safeQuery, location: safeLocation, language, start: nextStart || null });
         const parsed = parseSerpResults(data.local_results ?? [], (start ? results.length : 0) + collected.length);
         collected.push(...parsed.slice(0, safeMax - collected.length));
         pages += 1;

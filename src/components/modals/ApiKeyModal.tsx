@@ -20,7 +20,7 @@ export function ApiKeyModal() {
           </div>
           <DialogTitle className="font-display text-2xl tracking-tight">Connect SerpAPI</DialogTitle>
           <DialogDescription className="text-sm">
-            Your API key is stored locally in your browser. It is never sent to any third-party server.
+            Use your own SerpAPI key, or set a server-side <span className="font-mono">SERPAPI_KEY</span> in Netlify for production.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -45,7 +45,7 @@ export function ApiKeyModal() {
           <div className="flex items-start gap-2.5 rounded-md border border-border/60 bg-secondary/40 p-3">
             <Shield className="mt-0.5 h-4 w-4 shrink-0 text-success" />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Stored in <span className="font-mono text-foreground">localStorage</span>. Cleared anytime by signing out of your browser.
+              If you enter a key here, it is stored in <span className="font-mono text-foreground">localStorage</span> and sent only to your own Netlify function, not directly to SerpAPI from the browser.
             </p>
           </div>
         </div>

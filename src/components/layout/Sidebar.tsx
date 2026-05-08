@@ -9,6 +9,7 @@ import { SheetsModal } from "@/components/modals/SheetsModal";
 import { useApp } from "@/context/AppContext";
 import { useSerpApi } from "@/hooks/useSerpApi";
 import { useSheetExport } from "@/hooks/useSheetExport";
+import { callSerpApi } from "@/lib/serpApiProxy";
 import { businessKeywords } from "@/data/keywords";
 
 const languages = [
@@ -27,16 +28,11 @@ const popularLocations = [
   "Dhaka, Bangladesh", "Singapore", "Berlin, Germany", "Paris, France", "Toronto, Canada", "Sydney, Australia",
 ];
 
-async function fetchLocationSuggestions(query: string, apiKey?: string): Promise<string[]> {
+async function fetchLocationSuggestions(query: string): Promise<string[]> {
   if (!query.trim()) return [];
   try {
-    // Direct SerpAPI call from browser
-    const params = new URLSearchParams({ q: query, limit: "10" });
-    const res = await fetch(`https://serpapi.com/locations.json?${params.toString()}`, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-    });
-    const data = await res.json().catch(() => []);
+    const params = new URLSearchParams({ mode: "locations", q: query, limit: "10" });
+    const data = await callSerpApi(params).catch(() => []);
     const list = Array.isArray(data) ? data : [];
     return list
       .map((item: any) => item.canonical_name || item.name)
@@ -48,7 +44,7 @@ async function fetchLocationSuggestions(query: string, apiKey?: string): Promise
 }
 
 export function Sidebar() {
-  const { apiKey, results, status, sidebarOpen, setSidebarOpen, setModalOpen, setLastSearch } = useApp();
+  const { apiKey, hasServerApiKey, results, status, sidebarOpen, setSidebarOpen, setModalOpen, setLastSearch } = useApp();
   const { scrape } = useSerpApi();
   const { url: sheetUrl, sheetName, save: saveSheet, isConnected } = useSheetExport();
   const [query, setQuery] = useState("lawyers");
@@ -59,7 +55,7 @@ export function Sidebar() {
 
   const cleanedQuery = query.trim().slice(0, 160);
   const cleanedLocation = location.trim().slice(0, 160);
-  const canScrape = Boolean(apiKey && cleanedQuery && cleanedLocation && status !== "scraping");
+  const canScrape = Boolean((apiKey || hasServerApiKey) && cleanedQuery && cleanedLocation && status !== "scraping");
 
   const startScrape = () => {
     if (!canScrape) return;
