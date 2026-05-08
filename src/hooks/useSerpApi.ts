@@ -20,12 +20,22 @@ function friendlyError(message: string) {
 }
 
 async function fetchSerpPage(input: { query: string; location: string; language: string; apiKey: string; start: number | null }) {
-  const response = await fetch("/api/serpapi", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+  // Direct SerpAPI call from browser (no backend needed for static deployment)
+  const params = new URLSearchParams({
+    engine: "google_maps",
+    q: `${input.query} in ${input.location}`,
+    type: "search",
+    hl: input.language,
+    api_key: input.apiKey,
   });
-  const data = await response.json();
+
+  if (input.start) params.set("start", String(input.start));
+
+  const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  const data = await response.json().catch(() => ({ error: "SerpAPI returned an unreadable response." }));
   if (!response.ok || data.error) throw new Error(friendlyError(data.error ?? "Network error. Check your connection and try again."));
   return data;
 }
