@@ -43,9 +43,49 @@ export function SheetsModal({ open, initialUrl, initialSheetName, onClose, onSav
   const body = JSON.parse(e.postData.contents);
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(body.sheetName) || ss.insertSheet(body.sheetName);
-  if (sheet.getLastRow() === 0) sheet.appendRow(body.headers);
-  body.rows.forEach(r => sheet.appendRow(r));
-  return ContentService.createTextOutput(JSON.stringify({ok:true, added: body.rows.length}))
+
+  const headers = body.headers || [];
+  const rows = body.rows || [];
+
+  if (!headers.length || !rows.length) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: "No headers or rows received" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const phoneColIndex = headers.indexOf("Phone");
+
+  const safeRows = rows.map(row => {
+    const newRow = [...row];
+
+    if (phoneColIndex !== -1 && newRow[phoneColIndex]) {
+      const phone = String(newRow[phoneColIndex]).trim();
+
+      if (phone !== "—") {
+        newRow[phoneColIndex] = "'" + phone;
+      }
+    }
+
+    return newRow.map(value => value == null ? "" : String(value));
+  });
+
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+
+  const startRow = sheet.getLastRow() + 1;
+  const range = sheet.getRange(startRow, 1, safeRows.length, headers.length);
+
+  if (phoneColIndex !== -1) {
+    sheet
+      .getRange(startRow, phoneColIndex + 1, safeRows.length, 1)
+      .setNumberFormat("@");
+  }
+
+  range.setValues(safeRows);
+
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok: true, added: safeRows.length }))
     .setMimeType(ContentService.MimeType.JSON);
 }`}</pre>
           </details>
